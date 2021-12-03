@@ -171,7 +171,11 @@ async def test_open_error_message():
 
 
 async def test_pickle():
+  import sys
+  print('test_pickle starting')
+  sys.stdout.flush()
   with tempfile.TemporaryDirectory() as dir_path:
+    print('Creating context')
     context = ts.Context({"cache_pool": {"total_bytes_limit": 1000000}})
     spec = {
         "driver": "n5",
@@ -192,25 +196,49 @@ async def test_pickle():
         "create": True,
         "open": True,
     }
+    print('open t1')
+    sys.stdout.flush()
     t1 = await ts.open(spec, context=context)
+    print('open t2')
+    sys.stdout.flush()
     t2 = await ts.open(spec, context=context)
-
+    print('pickle.dumps')
+    sys.stdout.flush()
     pickled = pickle.dumps([t1, t2])
+    print('pickle.loads')
+    sys.stdout.flush()
     unpickled = pickle.loads(pickled)
     new_t1, new_t2 = unpickled
 
+    print('read new_t1')
+    sys.stdout.flush()
     assert new_t1[0, 0].read().result() == 0
+    print('read new_t2')
+    sys.stdout.flush()
     assert new_t2[0, 0].read().result() == 0
+    print('write new_t1')
+    sys.stdout.flush()
     new_t1[0, 0] = 42
 
     # Delete data
+    print('open to delete')
+    sys.stdout.flush()
     await ts.open(spec, create=True, delete_existing=True)
 
     # new_t1 still sees old data in cache
+    print('read new_t1')
+    sys.stdout.flush()
     assert new_t1[0, 0].read().result() == 42
 
     # new_t2 shares cache with new_t1
+    print('read new_t2')
+    sys.stdout.flush()
     assert new_t2[0, 0].read().result() == 42
+    print('after read new_t2')
+    sys.stdout.flush()
+
+  print('deleted temporary files')
+  sys.stdout.flush()
 
 
 async def test_pickle_read_write_mode():
